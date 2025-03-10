@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
@@ -32,11 +31,11 @@ const Login = () => {
       if (success) {
         // Redirect based on role
         if (email === 'admin@school.edu') {
-          navigate('/admin-dashboard');
+          navigate('/admin');
         } else if (email === 'teacher@school.edu') {
-          navigate('/teacher-portal');
+          navigate('/teacher');
         } else {
-          navigate('/student-portal');
+          navigate('/student');
         }
       } else {
         setError('Invalid credentials');

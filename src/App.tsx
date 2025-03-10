@@ -14,28 +14,31 @@ import Contact from "./pages/Contact";
 import AdminDashboard from "./pages/AdminDashboard";
 import StudentPortal from "./pages/StudentPortal";
 import Login from "./pages/Login";
+import { AuthProvider } from "./components/AuthContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/teacher" element={<TeacherDashboard />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/admission" element={<Admission />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/student" element={<StudentPortal />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/teacher" element={<TeacherDashboard />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/admission" element={<Admission />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/student" element={<StudentPortal />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

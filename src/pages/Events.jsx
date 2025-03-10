@@ -11,7 +11,8 @@ const Events = () => {
       date: "2024-03-15",
       time: "10:00 AM",
       location: "Main Auditorium",
-      description: "Showcase of student science projects"
+      description: "Showcase of student science projects",
+      image: "/placeholder.svg" // Adding required image property
     },
     {
       id: 2,
@@ -19,9 +20,18 @@ const Events = () => {
       date: "2024-03-20",
       time: "2:00 PM",
       location: "Multiple Classrooms",
-      description: "Quarterly meeting with parents"
+      description: "Quarterly meeting with parents",
+      image: "/placeholder.svg" // Adding required image property
     },
-    // Add more events as needed
+    {
+      id: 3,
+      title: "Sports Day",
+      date: "2024-04-05",
+      time: "9:00 AM",
+      location: "School Grounds",
+      description: "Annual athletics competition",
+      image: "/placeholder.svg" // Adding required image property
+    }
   ];
 
   return (

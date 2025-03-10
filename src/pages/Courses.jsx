@@ -10,7 +10,8 @@ const Courses = () => {
       description: "Advanced mathematics including algebra, calculus, and statistics",
       instructor: "Dr. John Smith",
       duration: "1 semester",
-      level: "Advanced"
+      level: "Advanced",
+      image: "/placeholder.svg" // Adding required image property
     },
     {
       id: 2,
@@ -18,9 +19,18 @@ const Courses = () => {
       description: "Fundamental principles of physics and practical applications",
       instructor: "Dr. Sarah Johnson",
       duration: "1 semester",
-      level: "Intermediate"
+      level: "Intermediate",
+      image: "/placeholder.svg" // Adding required image property
     },
-    // Add more courses as needed
+    {
+      id: 3,
+      title: "Computer Science",
+      description: "Programming fundamentals and software development concepts",
+      instructor: "Prof. David Miller",
+      duration: "1 semester",
+      level: "Beginner",
+      image: "/placeholder.svg" // Adding required image property
+    }
   ];
 
   return (
