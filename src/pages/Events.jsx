@@ -41,7 +41,7 @@ const Events = () => {
         <div className="lg:col-span-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {events.map(event => (
-              <EventCard key={event.id} {...event} />
+              <EventCard key={event.id} event={event} />
             ))}
           </div>
         </div>
