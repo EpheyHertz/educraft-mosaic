@@ -1,24 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown, Bell, User, LogOut } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { 
+  Menu, X, ChevronDown, LogIn, LogOut, User, BookOpen, Calendar, Phone, Home, School
+} from 'lucide-react';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { currentUser, isAuthenticated, logout, isAdmin, isTeacher, isStudent } = useAuth();
+  const { currentUser, logout, isAuthenticated } = useAuth();
   const location = useLocation();
 
-  // Handle scroll effect for navbar
+  // Track scrolling for navbar appearance
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 10) {
@@ -27,192 +21,156 @@ const Navbar = () => {
         setScrolled(false);
       }
     };
-
+    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Define navigation links based on user role
-  const getNavLinks = () => {
-    const commonLinks = [
-      { name: 'Home', path: '/' },
-      { name: 'Courses', path: '/courses' },
-      { name: 'Events', path: '/events' },
-      { name: 'Admission', path: '/admission' },
-      { name: 'Contact', path: '/contact' },
-    ];
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
-    if (isAuthenticated) {
-      if (isAdmin) {
-        return [...commonLinks, { name: 'Admin Dashboard', path: '/admin' }];
-      } else if (isTeacher) {
-        return [...commonLinks, { name: 'Teacher Dashboard', path: '/teacher' }];
-      } else if (isStudent) {
-        return [...commonLinks, { name: 'Student Portal', path: '/student' }];
-      }
-    }
-    
-    return commonLinks;
-  };
-
-  const navLinks = getNavLinks();
-  const dashboardLink = isAdmin ? '/admin' : isTeacher ? '/teacher' : isStudent ? '/student' : null;
+  // Navigation items
+  const navItems = [
+    { label: 'Home', path: '/', icon: <Home className="h-4 w-4" /> },
+    { label: 'Courses', path: '/courses', icon: <BookOpen className="h-4 w-4" /> },
+    { label: 'Events', path: '/events', icon: <Calendar className="h-4 w-4" /> },
+    { label: 'Admission', path: '/admission', icon: <School className="h-4 w-4" /> },
+    { label: 'Contact', path: '/contact', icon: <Phone className="h-4 w-4" /> },
+  ];
 
   return (
     <nav 
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white shadow-md py-2' : 'bg-white/80 backdrop-blur-md py-4'
+        scrolled 
+          ? 'bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-md' 
+          : 'bg-transparent'
       }`}
     >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="bg-primary text-white p-2 rounded-md">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-              </svg>
-            </div>
-            <span className="font-bold text-xl hidden sm:block">EduPro Academy</span>
+          <Link 
+            to="/" 
+            className="flex items-center space-x-2 text-primary font-bold text-xl"
+          >
+            <School className="h-6 w-6" />
+            <span className="hidden sm:inline-block">EduSchool</span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {navLinks.map((link, index) => (
+          {/* Desktop navigation */}
+          <div className="hidden md:flex md:items-center md:space-x-6">
+            {navItems.map((item) => (
               <Link
-                key={index}
-                to={link.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  location.pathname === link.path
-                    ? 'text-primary'
-                    : 'text-gray-700 hover:text-primary'
+                key={item.path}
+                to={item.path}
+                className={`text-sm font-medium transition-colors hover:text-primary flex items-center space-x-1 px-1 py-2 ${
+                  location.pathname === item.path ? 'text-primary border-b-2 border-primary' : 'text-foreground/80'
                 }`}
               >
-                {link.name}
+                {item.icon}
+                <span>{item.label}</span>
               </Link>
             ))}
-          </div>
 
-          {/* Authentication Buttons or User Menu */}
-          <div className="hidden lg:flex items-center space-x-4">
+            {/* Auth buttons */}
             {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                {/* Notifications */}
-                <Button variant="outline" size="icon" className="relative">
-                  <Bell size={18} />
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">3</span>
-                </Button>
+              <div className="relative group">
+                <button className="flex items-center space-x-1 bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm font-medium">
+                  <User className="h-4 w-4" />
+                  <span className="max-w-[100px] truncate">{currentUser.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
                 
-                {/* User dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <span className="hidden sm:inline-block">{currentUser?.name}</span>
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
-                        {currentUser?.avatar ? (
-                          <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={20} />
-                        )}
-                      </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {dashboardLink && (
-                      <>
-                        <DropdownMenuItem asChild>
-                          <Link to={dashboardLink} className="flex items-center gap-2 w-full">
-                            <User size={16} /> Dashboard
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to="/profile" className="flex items-center gap-2 w-full">
-                            <User size={16} /> Profile
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 text-red-500">
-                      <LogOut size={16} /> Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-md shadow-lg overflow-hidden z-20 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 origin-top-right">
+                  <div className="py-1">
+                    <Link to={`/${currentUser.role}-portal`} className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                    <button 
+                      onClick={logout}
+                      className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="outline">Log In</Button>
-                </Link>
-                <Link to="/admission">
-                  <Button>Apply Now</Button>
-                </Link>
-              </>
+              <Link
+                to="/login"
+                className="flex items-center space-x-1 bg-primary text-white rounded-full px-4 py-1.5 text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Login</span>
+              </Link>
             )}
           </div>
 
           {/* Mobile menu button */}
-          <div className="lg:hidden flex items-center">
+          <div className="flex md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-gray-700 hover:text-primary focus:outline-none"
+              className="text-foreground p-2"
+              aria-label="Toggle menu"
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
-
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
-            <div className="flex flex-col space-y-2 pt-2">
-              {navLinks.map((link, index) => (
-                <Link
-                  key={index}
-                  to={link.path}
-                  className={`px-3 py-2 rounded-md font-medium ${
-                    location.pathname === link.path
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              {!isAuthenticated ? (
-                <div className="flex flex-col space-y-2 mt-2 pt-2 border-t border-gray-200">
-                  <Link 
-                    to="/login"
-                    className="px-3 py-2 text-center rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Log In
-                  </Link>
-                  <Link 
-                    to="/admission"
-                    className="px-3 py-2 text-center rounded-md bg-primary text-white hover:bg-primary/90"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Apply Now
-                  </Link>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    logout();
-                    setIsMenuOpen(false);
-                  }}
-                  className="px-3 py-2 rounded-md text-red-600 font-medium hover:bg-red-50 flex items-center"
-                >
-                  <LogOut size={16} className="mr-2" /> Logout
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden absolute top-16 inset-x-0 bg-white dark:bg-gray-900 shadow-lg animate-slide-in">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium ${
+                  location.pathname === item.path
+                    ? 'bg-primary/10 text-primary'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ))}
+            
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to={`/${currentUser.role}-portal`}
+                  className="flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <User className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="flex w-full items-center space-x-3 px-3 py-3 rounded-md text-base font-medium text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium bg-primary text-white"
+              >
+                <LogIn className="h-5 w-5" />
+                <span>Login</span>
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
