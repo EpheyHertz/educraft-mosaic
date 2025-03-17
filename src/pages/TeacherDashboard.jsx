@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, PlusCircle, FileText, Users, ClipboardList } from 'lucide-react';
+import { useAuth } from '../components/AuthContext';
+import { Navigate } from 'react-router-dom';
 import TeacherClassList from '../components/TeacherClassList';
 import TeacherSchedule from '../components/TeacherSchedule';
 import TeacherStudentPerformance from '../components/TeacherStudentPerformance';
@@ -8,17 +10,33 @@ import TeacherAnnouncements from '../components/TeacherAnnouncements';
 import SidebarNavigation from '../components/dashboard/SidebarNavigation';
 import DashboardHeader from '../components/dashboard/DashboardHeader';
 import OverviewDashboard from '../components/dashboard/OverviewDashboard';
+import TeacherGradeBook from '../components/teacher/TeacherGradeBook';
+import TeacherLessonPlanner from '../components/teacher/TeacherLessonPlanner';
+import TeacherResourceLibrary from '../components/teacher/TeacherResourceLibrary';
 
 const TeacherDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const { isAuthenticated, isTeacher, currentUser } = useAuth();
   
-  // Mock teacher data
+  // Redirect if not authenticated or not a teacher
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  if (!isTeacher) {
+    return <Navigate to="/" />;
+  }
+  
+  // Mock teacher data (will be replaced by currentUser data)
   const teacher = {
-    name: "John Smith",
+    name: currentUser.name || "John Smith",
     avatar: "https://randomuser.me/api/portraits/men/43.jpg",
     subject: "Mathematics",
-    notifications: 3
+    notifications: 3,
+    email: currentUser.email || "teacher@school.edu",
+    department: "Science & Mathematics",
+    id: currentUser.id || "T1001"
   };
   
   const toggleSidebar = () => {
@@ -55,6 +73,33 @@ const TeacherDashboard = () => {
           {activeTab === 'schedule' && <TeacherSchedule />}
           {activeTab === 'performance' && <TeacherStudentPerformance />}
           {activeTab === 'announcements' && <TeacherAnnouncements />}
+          {activeTab === 'gradebook' && <TeacherGradeBook />}
+          {activeTab === 'lesson-planner' && <TeacherLessonPlanner />}
+          {activeTab === 'resources' && <TeacherResourceLibrary />}
+          
+          {/* Quick Action Floating Button */}
+          <div className="fixed bottom-6 right-6">
+            <div className="group relative">
+              <button className="h-14 w-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none">
+                <PlusCircle size={24} />
+              </button>
+              
+              <div className="absolute bottom-16 right-0 bg-white rounded-lg shadow-xl p-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                <button className="flex items-center w-full p-2 text-left rounded-md hover:bg-gray-100">
+                  <FileText className="mr-2 h-5 w-5 text-primary" />
+                  <span>Create Assignment</span>
+                </button>
+                <button className="flex items-center w-full p-2 text-left rounded-md hover:bg-gray-100">
+                  <ClipboardList className="mr-2 h-5 w-5 text-primary" />
+                  <span>Add Lesson Plan</span>
+                </button>
+                <button className="flex items-center w-full p-2 text-left rounded-md hover:bg-gray-100">
+                  <Users className="mr-2 h-5 w-5 text-primary" />
+                  <span>Schedule Meeting</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </main>
       </div>
     </div>
