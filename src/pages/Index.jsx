@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, BookOpen, Calendar, User, School, ArrowRight, Clock, Award, GraduationCap } from 'lucide-react';
+import { ChevronRight, BookOpen, Calendar, User, School, ArrowRight, Award, GraduationCap } from 'lucide-react';
 import Hero from '../components/Hero';
 import CourseCard from '../components/CourseCard';
 import EventCard from '../components/EventCard';
@@ -82,20 +82,6 @@ const stats = [
 ];
 
 const Index = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  // Animation on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 100) {
-        setIsVisible(true);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -137,10 +123,7 @@ const Index = () => {
             ].map((feature, index) => (
               <div 
                 key={index}
-                className={`bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700 shadow-md hover:shadow-lg transition-all duration-300 ${
-                  isVisible ? 'animate-slide-in' : 'opacity-0'
-                }`}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-100 dark:border-gray-700 shadow-md hover:shadow-lg transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-4">
                   {feature.icon}
