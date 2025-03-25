@@ -1,13 +1,10 @@
 
 import React from 'react';
-import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
-import Footer from '../components/Footer';
 
 const Index = () => {
   return (
     <>
-      <Navbar />
       <Hero />
       <div className="min-h-screen py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,7 +18,6 @@ const Index = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 };
