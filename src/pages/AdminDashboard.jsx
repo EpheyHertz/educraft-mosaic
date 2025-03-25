@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { Users, BookOpen, Calendar, Settings, Bell, Search } from 'lucide-react';
+import { Users, BookOpen, Calendar, Settings, Bell, Search, PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -71,14 +72,50 @@ const AdminDashboard = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-2">
-              {['Add New Student', 'Add New Teacher', 'Create Course', 'View Reports'].map((action, index) => (
-                <button
-                  key={index}
-                  className="w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  {action}
-                </button>
-              ))}
+              <Link 
+                to="/admin/forms?tab=student"
+                className="flex items-center w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Users className="mr-2 h-5 w-5 text-primary" />
+                <span>Add New Student</span>
+              </Link>
+              <Link 
+                to="/admin/forms?tab=teacher"
+                className="flex items-center w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Users className="mr-2 h-5 w-5 text-primary" />
+                <span>Add New Teacher</span>
+              </Link>
+              <Link 
+                to="/admin/forms?tab=course"
+                className="flex items-center w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <BookOpen className="mr-2 h-5 w-5 text-primary" />
+                <span>Create Course</span>
+              </Link>
+              <Link 
+                to="/admin/forms?tab=event"
+                className="flex items-center w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Calendar className="mr-2 h-5 w-5 text-primary" />
+                <span>Add Event</span>
+              </Link>
+              <button 
+                className="flex items-center w-full text-left px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Settings className="mr-2 h-5 w-5 text-primary" />
+                <span>View Reports</span>
+              </button>
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <Link 
+                to="/admin/forms"
+                className="flex items-center justify-center w-full bg-primary text-white rounded-md px-4 py-2 mt-2 hover:bg-primary/90 transition-colors"
+              >
+                <PlusCircle className="mr-2 h-5 w-5" />
+                All Management Forms
+              </Link>
             </div>
           </div>
         </div>

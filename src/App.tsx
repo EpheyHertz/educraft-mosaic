@@ -19,6 +19,8 @@ import Layout from "./components/Layout";
 import CourseDetail from "./pages/CourseDetail";
 import StudentDetail from "./pages/StudentDetail";
 import TeacherDetail from "./pages/TeacherDetail";
+import EventDetail from "./pages/EventDetail";
+import AdminForms from "./pages/AdminForms";
 
 const queryClient = new QueryClient();
 
@@ -35,11 +37,13 @@ const App = () => (
               <Route path="/teacher" element={<TeacherDashboard />} />
               <Route path="/teacher/:id" element={<TeacherDetail />} />
               <Route path="/courses" element={<Courses />} />
-              <Route path="/course/:id" element={<CourseDetail />} />
+              <Route path="/courses/:id" element={<CourseDetail />} />
               <Route path="/events" element={<Events />} />
+              <Route path="/events/:id" element={<EventDetail />} />
               <Route path="/admission" element={<Admission />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/forms" element={<AdminForms />} />
               <Route path="/student" element={<StudentPortal />} />
               <Route path="/student/:id" element={<StudentDetail />} />
               <Route path="/login" element={<Login />} />

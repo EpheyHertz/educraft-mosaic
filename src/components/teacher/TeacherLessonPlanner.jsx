@@ -1,166 +1,291 @@
 
 import React, { useState } from 'react';
-import { Book, Calendar, Clock, Plus, Search, Filter, MoreVertical } from 'lucide-react';
+import { Calendar, Clock, BookOpen, CheckCircle, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 const TeacherLessonPlanner = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Mock lesson plans data
-  const lessonPlans = [
+  const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
+  const [newLesson, setNewLesson] = useState({
+    title: '',
+    subject: '',
+    grade: '',
+    duration: '',
+    objectives: '',
+    materials: '',
+    procedure: '',
+    assessment: '',
+    date: '',
+  });
+
+  // Sample data - in a real app, this would come from an API
+  const [lessons, setLessons] = useState([
     {
       id: 1,
-      title: 'Introduction to Quadratic Equations',
-      subject: 'Advanced Mathematics',
-      grade: '11th Grade',
-      date: '2023-05-15',
-      status: 'published',
-      objectives: ['Understand the standard form of quadratic equations', 'Learn to factor quadratic expressions', 'Solve quadratic equations by factoring'],
-      materials: ['Textbook pages 45-50', 'Worksheet 3A', 'Graphing calculators'],
-      activities: [
-        { type: 'Warm-up', duration: 10, description: 'Review of linear equations' },
-        { type: 'Direct Instruction', duration: 25, description: 'Introduction to quadratic forms' },
-        { type: 'Group Activity', duration: 30, description: 'Factoring practice in pairs' },
-        { type: 'Assessment', duration: 15, description: 'Exit ticket: solve 3 problems' }
-      ]
+      title: 'Introduction to Algebra',
+      subject: 'Mathematics',
+      grade: '9th Grade',
+      duration: '45 minutes',
+      date: '2024-05-15',
+      status: 'completed'
     },
     {
       id: 2,
-      title: 'Solving Systems of Equations',
-      subject: 'Algebra II',
+      title: 'Cell Structure and Function',
+      subject: 'Biology',
       grade: '10th Grade',
-      date: '2023-05-18',
-      status: 'draft',
-      objectives: ['Understand what a system of equations represents', 'Learn to solve systems using substitution', 'Learn to solve systems using elimination'],
-      materials: ['Whiteboard and markers', 'Handout on real-world applications', 'Online practice tool'],
-      activities: [
-        { type: 'Review', duration: 15, description: 'Review homework problems' },
-        { type: 'Instruction', duration: 20, description: 'New methods for systems of equations' },
-        { type: 'Practice', duration: 35, description: 'Individual and pair practice' },
-        { type: 'Wrap-up', duration: 10, description: 'Summary and homework assignment' }
-      ]
+      duration: '60 minutes',
+      date: '2024-05-17',
+      status: 'upcoming'
     },
     {
       id: 3,
-      title: 'Derivatives and Rate of Change',
-      subject: 'Calculus',
-      grade: '12th Grade',
-      date: '2023-05-20',
-      status: 'published',
-      objectives: ['Understand the concept of a derivative', 'Calculate basic derivatives', 'Apply derivatives to rate of change problems'],
-      materials: ['Calculus textbook', 'Graphing software', 'Handouts with practice problems'],
-      activities: [
-        { type: 'Bell Ringer', duration: 10, description: 'Function review' },
-        { type: 'New Content', duration: 30, description: 'Introducing derivatives' },
-        { type: 'Application', duration: 25, description: 'Real-world examples of rates of change' },
-        { type: 'Practice', duration: 15, description: 'Independent practice and questions' }
-      ]
+      title: 'World War II: Causes and Effects',
+      subject: 'History',
+      grade: '11th Grade',
+      duration: '90 minutes',
+      date: '2024-05-20',
+      status: 'upcoming'
     }
-  ];
-  
-  const filterLessons = () => {
-    if (!searchTerm) return lessonPlans;
-    return lessonPlans.filter(plan => 
-      plan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  ]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewLesson(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
-  
-  const filteredLessons = filterLessons();
-  
+
+  const handleSelectChange = (name, value) => {
+    setNewLesson(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddLesson = () => {
+    // In a real app, this would be an API call
+    const lesson = {
+      id: lessons.length + 1,
+      ...newLesson,
+      status: 'upcoming'
+    };
+    
+    setLessons([...lessons, lesson]);
+    setLessonDialogOpen(false);
+    toast.success('Lesson plan added successfully!');
+    
+    // Reset form
+    setNewLesson({
+      title: '',
+      subject: '',
+      grade: '',
+      duration: '',
+      objectives: '',
+      materials: '',
+      procedure: '',
+      assessment: '',
+      date: ''
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold">Lesson Planner</h2>
-        
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search lesson plans..."
-              className="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md w-full"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <button className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-            <Plus size={18} />
-            <span>Create New Plan</span>
-          </button>
-        </div>
-      </div>
-      
-      {/* Plans List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredLessons.map(plan => (
-          <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow">
-            <div className="p-5">
-              <div className="flex justify-between items-start">
-                <div className="flex items-center">
-                  <div className="bg-primary/10 p-2 rounded-md mr-3">
-                    <Book className="text-primary" size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-base">{plan.title}</h3>
-                    <p className="text-sm text-gray-500">{plan.subject} • {plan.grade}</p>
-                  </div>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded-full ${
-                  plan.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {plan.status.charAt(0).toUpperCase() + plan.status.slice(1)}
-                </span>
-              </div>
-              
-              <div className="mt-4 flex items-center text-sm text-gray-500">
-                <Calendar size={14} className="mr-1" />
-                <span>
-                  {new Date(plan.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </span>
-              </div>
-              
-              <div className="mt-3">
-                <h4 className="text-xs font-medium uppercase text-gray-500 mb-1">Objectives</h4>
-                <ul className="text-sm space-y-1 pl-5 list-disc">
-                  {plan.objectives.map((objective, idx) => (
-                    <li key={idx} className="text-gray-700 dark:text-gray-300">{objective}</li>
-                  )).slice(0, 2)}
-                  {plan.objectives.length > 2 && <li className="text-gray-500 italic">+ {plan.objectives.length - 2} more</li>}
-                </ul>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                <div className="flex items-center text-sm text-gray-500">
-                  <Clock size={14} className="mr-1" />
-                  <span>{plan.activities.reduce((total, act) => total + act.duration, 0)} minutes</span>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Lesson Planner</h2>
+        <Dialog open={lessonDialogOpen} onOpenChange={setLessonDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Lesson Plan
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Lesson Plan</DialogTitle>
+              <DialogDescription>
+                Fill in the details to create a new lesson plan.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Lesson Title</label>
+                  <Input 
+                    name="title"
+                    value={newLesson.title}
+                    onChange={handleInputChange}
+                    placeholder="Introduction to Photosynthesis"
+                  />
                 </div>
                 
-                <div className="flex space-x-2">
-                  <button className="text-primary hover:text-primary/80 transition-colors text-sm">
-                    Edit
-                  </button>
-                  <button className="text-gray-500 hover:text-gray-700 transition-colors">
-                    <MoreVertical size={18} />
-                  </button>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Subject</label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange('subject', value)}
+                    value={newLesson.subject}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mathematics">Mathematics</SelectItem>
+                      <SelectItem value="Science">Science</SelectItem>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="History">History</SelectItem>
+                      <SelectItem value="Art">Art</SelectItem>
+                      <SelectItem value="Physical Education">Physical Education</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Grade Level</label>
+                  <Select 
+                    onValueChange={(value) => handleSelectChange('grade', value)}
+                    value={newLesson.grade}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="9th Grade">9th Grade</SelectItem>
+                      <SelectItem value="10th Grade">10th Grade</SelectItem>
+                      <SelectItem value="11th Grade">11th Grade</SelectItem>
+                      <SelectItem value="12th Grade">12th Grade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Duration</label>
+                  <Input 
+                    name="duration"
+                    value={newLesson.duration}
+                    onChange={handleInputChange}
+                    placeholder="45 minutes"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date</label>
+                <Input 
+                  name="date"
+                  type="date"
+                  value={newLesson.date}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Learning Objectives</label>
+                <Textarea 
+                  name="objectives"
+                  value={newLesson.objectives}
+                  onChange={handleInputChange}
+                  placeholder="Students will be able to..."
+                  className="min-h-[80px]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Materials Needed</label>
+                <Textarea 
+                  name="materials"
+                  value={newLesson.materials}
+                  onChange={handleInputChange}
+                  placeholder="Textbooks, worksheets, lab equipment..."
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Procedure/Activities</label>
+                <Textarea 
+                  name="procedure"
+                  value={newLesson.procedure}
+                  onChange={handleInputChange}
+                  placeholder="Step-by-step instructional activities..."
+                  className="min-h-[120px]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Assessment Method</label>
+                <Textarea 
+                  name="assessment"
+                  value={newLesson.assessment}
+                  onChange={handleInputChange}
+                  placeholder="How student learning will be assessed..."
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setLessonDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleAddLesson}>
+                Add Lesson Plan
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {lessons.map(lesson => (
+          <div 
+            key={lesson.id} 
+            className={`bg-white p-6 rounded-lg shadow-sm border-l-4 ${
+              lesson.status === 'completed' ? 'border-green-500' : 'border-blue-500'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="font-semibold text-lg">{lesson.title}</h3>
+              {lesson.status === 'completed' && (
+                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full flex items-center">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Completed
+                </span>
+              )}
+              {lesson.status === 'upcoming' && (
+                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                  Upcoming
+                </span>
+              )}
+            </div>
+            
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center">
+                <BookOpen className="h-4 w-4 mr-2 text-gray-400" />
+                <span>{lesson.subject} - {lesson.grade}</span>
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-gray-400" />
+                <span>{lesson.duration}</span>
+              </div>
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                <span>{new Date(lesson.date).toLocaleDateString()}</span>
+              </div>
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end space-x-2">
+              <Button variant="outline" size="sm">View</Button>
+              <Button variant="outline" size="sm">Edit</Button>
             </div>
           </div>
         ))}
       </div>
-      
-      {filteredLessons.length === 0 && (
-        <div className="text-center py-8">
-          <Book size={48} className="mx-auto text-gray-300 mb-3" />
-          <h3 className="text-lg font-medium text-gray-500">No lesson plans found</h3>
-          <p className="text-gray-400 mt-1">Try adjusting your search or create a new lesson plan</p>
-        </div>
-      )}
     </div>
   );
 };
