@@ -13,6 +13,7 @@ import OverviewDashboard from '../components/dashboard/OverviewDashboard';
 import TeacherGradeBook from '../components/teacher/TeacherGradeBook';
 import TeacherLessonPlanner from '../components/teacher/TeacherLessonPlanner';
 import TeacherResourceLibrary from '../components/teacher/TeacherResourceLibrary';
+import TeacherAssignments from '../components/teacher/TeacherAssignments';
 
 const TeacherDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -76,6 +77,7 @@ const TeacherDashboard = () => {
           {activeTab === 'gradebook' && <TeacherGradeBook />}
           {activeTab === 'lesson-planner' && <TeacherLessonPlanner />}
           {activeTab === 'resources' && <TeacherResourceLibrary />}
+          {activeTab === 'assignments' && <TeacherAssignments />}
           
           {/* Quick Action Floating Button */}
           <div className="fixed bottom-6 right-6">

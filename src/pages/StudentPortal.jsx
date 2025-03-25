@@ -4,8 +4,12 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { 
   BookOpen, FileText, Bell, Calendar, MessageSquare, 
-  User, Award, ChevronRight, Clock, CheckCircle 
+  User, Award, ChevronRight, Clock, CheckCircle, Upload, PaperClip
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 // Sample data
 const assignments = [
@@ -29,6 +33,11 @@ const StudentPortal = () => {
   const { currentUser, isAuthenticated, isStudent } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [assignmentsList, setAssignmentsList] = useState(assignments);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [submissionComment, setSubmissionComment] = useState('');
 
   useEffect(() => {
     // Simulate data loading
@@ -54,6 +63,37 @@ const StudentPortal = () => {
     { id: 'assignments', label: 'Assignments', icon: <FileText className="h-5 w-5" /> },
     { id: 'messages', label: 'Messages', icon: <MessageSquare className="h-5 w-5" /> },
   ];
+
+  const handleAssignmentSubmit = () => {
+    if (!selectedFile && !submissionComment) {
+      toast.error("Please upload a file or add a comment");
+      return;
+    }
+
+    // Update the assignment status
+    const updatedAssignments = assignmentsList.map(assignment => 
+      assignment.id === selectedAssignment.id 
+        ? { ...assignment, status: 'completed' } 
+        : assignment
+    );
+
+    setAssignmentsList(updatedAssignments);
+    setSubmitDialogOpen(false);
+    setSelectedFile(null);
+    setSubmissionComment('');
+    toast.success("Assignment submitted successfully!");
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const openSubmitDialog = (assignment) => {
+    setSelectedAssignment(assignment);
+    setSubmitDialogOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
@@ -135,13 +175,16 @@ const StudentPortal = () => {
                         <FileText className="h-5 w-5 text-primary mr-2" />
                         <h2 className="font-semibold text-gray-900 dark:text-white">Upcoming Assignments</h2>
                       </div>
-                      <Link to="/assignments" className="text-sm text-primary flex items-center hover:underline">
+                      <button
+                        onClick={() => setActiveTab('assignments')}
+                        className="text-sm text-primary flex items-center hover:underline"
+                      >
                         View All
                         <ChevronRight className="h-4 w-4 ml-1" />
-                      </Link>
+                      </button>
                     </div>
                     <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {assignments.map((assignment) => (
+                      {assignmentsList.map((assignment) => (
                         <div key={assignment.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-750">
                           <div className="flex justify-between">
                             <div>
@@ -202,10 +245,13 @@ const StudentPortal = () => {
                       <BookOpen className="h-5 w-5 text-primary mr-2" />
                       <h2 className="font-semibold text-gray-900 dark:text-white">Course Progress</h2>
                     </div>
-                    <Link to="/courses" className="text-sm text-primary flex items-center hover:underline">
+                    <button
+                      onClick={() => setActiveTab('courses')}
+                      className="text-sm text-primary flex items-center hover:underline"
+                    >
                       View All Courses
                       <ChevronRight className="h-4 w-4 ml-1" />
-                    </Link>
+                    </button>
                   </div>
                   <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {courses.map((course) => (
@@ -283,7 +329,7 @@ const StudentPortal = () => {
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
                 <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">Assignments</h2>
                 <div className="space-y-6">
-                  {assignments.map((assignment) => (
+                  {assignmentsList.map((assignment) => (
                     <div 
                       key={assignment.id} 
                       className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-md transition-shadow"
@@ -315,15 +361,87 @@ const StudentPortal = () => {
                               <span>Submitted</span>
                             </div>
                           ) : (
-                            <button className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                            <Button 
+                              onClick={() => openSubmitDialog(assignment)}
+                              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+                            >
                               Submit Assignment
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Assignment Submission Dialog */}
+                <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Submit Assignment</DialogTitle>
+                    </DialogHeader>
+                    {selectedAssignment && (
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="font-medium">{selectedAssignment.title}</h3>
+                          <p className="text-sm text-gray-500">{selectedAssignment.course}</p>
+                          <div className="flex items-center text-sm text-gray-500 mt-1">
+                            <Clock className="h-4 w-4 mr-1" />
+                            <span>Due: {new Date(selectedAssignment.dueDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Upload File</label>
+                          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center">
+                            <input
+                              type="file"
+                              id="file-upload"
+                              className="hidden"
+                              onChange={handleFileChange}
+                            />
+                            <label 
+                              htmlFor="file-upload"
+                              className="cursor-pointer text-primary hover:underline flex flex-col items-center"
+                            >
+                              <Upload className="h-6 w-6 mb-2" />
+                              <span>Click to upload file</span>
+                              <span className="text-xs text-gray-500 mt-1">PDF, DOCX, XLSX files</span>
+                            </label>
+                            
+                            {selectedFile && (
+                              <div className="mt-3 flex items-center justify-center text-sm text-gray-700 dark:text-gray-300">
+                                <PaperClip className="h-4 w-4 mr-1" />
+                                <span>{selectedFile.name}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Comments (optional)</label>
+                          <textarea
+                            className="w-full p-2 min-h-[100px] border border-gray-200 dark:border-gray-700 rounded-md"
+                            placeholder="Add any comments about your submission..."
+                            value={submissionComment}
+                            onChange={(e) => setSubmissionComment(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <DialogFooter>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setSubmitDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleAssignmentSubmit}>
+                        Submit
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
             
