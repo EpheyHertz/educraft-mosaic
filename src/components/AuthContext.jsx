@@ -50,10 +50,22 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out successfully");
   };
 
+  const updateUserProfile = (profileData) => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, ...profileData };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('schoolUser', JSON.stringify(updatedUser));
+      toast.success("Profile updated successfully");
+      return true;
+    }
+    return false;
+  };
+
   const value = {
     currentUser,
     login,
     logout,
+    updateUserProfile,
     isAuthenticated: !!currentUser,
     isAdmin: currentUser?.role === 'admin',
     isTeacher: currentUser?.role === 'teacher',
