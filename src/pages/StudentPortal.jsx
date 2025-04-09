@@ -4,7 +4,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthContext';
 import { 
   BookOpen, FileText, Bell, Calendar, MessageSquare, 
-  User, Award, ChevronRight, Clock, CheckCircle, Upload, PaperClip
+  User, Award, ChevronRight, Clock, CheckCircle, Upload, Paperclip
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
