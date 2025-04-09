@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
@@ -17,7 +18,7 @@ import {
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [scrolled, setScrolled] = useState<boolean>(false);
-  const { currentUser, logout, isAuthenticated } = useAuth();
+  const { profile, logout, isAuthenticated } = useAuth();
   const location = useLocation();
 
   // Track scrolling for navbar appearance
@@ -47,6 +48,19 @@ const Navbar: React.FC = () => {
     { label: 'Admission', path: '/admission', icon: <School className="h-4 w-4" /> },
     { label: 'Contact', path: '/contact', icon: <Phone className="h-4 w-4" /> },
   ];
+
+  // Get full name from profile
+  const getUserName = () => {
+    if (profile) {
+      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    }
+    return '';
+  };
+
+  // Get user role
+  const getUserRole = () => {
+    return profile?.role || '';
+  };
 
   return (
     <nav 
@@ -114,17 +128,17 @@ const Navbar: React.FC = () => {
               <div className="relative group">
                 <button className="flex items-center space-x-1 bg-primary/10 text-primary rounded-full px-3 py-1.5 text-sm font-medium">
                   <User className="h-4 w-4" />
-                  <span className="max-w-[100px] truncate">{currentUser?.name}</span>
+                  <span className="max-w-[100px] truncate">{getUserName()}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>
                 
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-900 rounded-md shadow-lg overflow-hidden z-20 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 origin-top-right">
                   <div className="py-1">
-                    <Link to={`/${currentUser?.role}-portal`} className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Link to={`/${getUserRole()}`} className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
                       <User className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
-                    <Link to={`/profile/${currentUser?.role}`} className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <Link to={`/profile/${getUserRole()}`} className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
                       <User className="mr-2 h-4 w-4" />
                       My Profile
                     </Link>
@@ -196,14 +210,14 @@ const Navbar: React.FC = () => {
             {isAuthenticated ? (
               <>
                 <Link
-                  to={`/${currentUser?.role}-portal`}
+                  to={`/${getUserRole()}`}
                   className="flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <User className="h-5 w-5" />
                   <span>Dashboard</span>
                 </Link>
                 <Link
-                  to={`/profile/${currentUser?.role}`}
+                  to={`/profile/${getUserRole()}`}
                   className="flex items-center space-x-3 px-3 py-3 rounded-md text-base font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   <User className="h-5 w-5" />
