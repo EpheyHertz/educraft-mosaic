@@ -1,103 +1,194 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from "sonner";
-
-interface User {
-  id: number;
-  email: string;
-  role: string;
-  name: string;
-  [key: string]: any;
-}
+import { Profile, UserRole } from '@/integrations/supabase/types.d';
 
 interface AuthContextType {
-  currentUser: User | null;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  updateUserProfile: (profileData: Partial<User>) => boolean;
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   isTeacher: boolean;
   isStudent: boolean;
+  login: (email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string, userData: object) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updateUserProfile: (profileData: Partial<Profile>) => Promise<boolean>;
+  loading: boolean;
 }
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Create auth context
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Mock user data for demonstration
-const MOCK_USERS: (User & { password: string })[] = [
-  { id: 1, email: 'admin@school.edu', password: 'admin123', role: 'admin', name: 'Admin User' },
-  { id: 2, email: 'teacher@school.edu', password: 'teacher123', role: 'teacher', name: 'John Smith' },
-  { id: 3, email: 'student@school.edu', password: 'student123', role: 'student', name: 'Jane Doe' },
-];
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('schoolUser');
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  const login = (email: string, password: string): boolean => {
-    // Find matching user
-    const user = MOCK_USERS.find(
-      (user) => user.email === email && user.password === password
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          setTimeout(() => {
+            fetchUserProfile(currentSession.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+      }
     );
 
-    if (user) {
-      // Remove password before storing user data
-      const { password, ...userWithoutPassword } = user;
-      setCurrentUser(userWithoutPassword);
-      localStorage.setItem('schoolUser', JSON.stringify(userWithoutPassword));
+    // Check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (currentSession?.user) {
+          await fetchUserProfile(currentSession.user.id);
+        }
+      } catch (error) {
+        console.error('Error checking auth session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+
       toast.success("Login successful!");
       return true;
-    } else {
-      toast.error("Invalid email or password");
+    } catch (error: any) {
+      toast.error(error.message || "Login failed");
       return false;
     }
   };
 
-  const logout = (): void => {
-    setCurrentUser(null);
-    localStorage.removeItem('schoolUser');
-    toast.success("Logged out successfully");
+  const signUp = async (email: string, password: string, userData: object): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+
+      toast.success("Sign up successful! Please check your email for verification.");
+      return true;
+    } catch (error: any) {
+      toast.error(error.message || "Sign up failed");
+      return false;
+    }
   };
 
-  const updateUserProfile = (profileData: Partial<User>): boolean => {
-    if (currentUser) {
-      const updatedUser = { ...currentUser, ...profileData };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('schoolUser', JSON.stringify(updatedUser));
+  const logout = async (): Promise<void> => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        throw error;
+      }
+      toast.success("Logged out successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Logout failed");
+    }
+  };
+
+  const updateUserProfile = async (profileData: Partial<Profile>): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(profileData)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        toast.error(error.message);
+        return false;
+      }
+
+      setProfile(data);
       toast.success("Profile updated successfully");
       return true;
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+      return false;
     }
-    return false;
   };
 
   const value: AuthContextType = {
-    currentUser,
+    session,
+    user,
+    profile,
+    isAuthenticated: !!user,
+    isAdmin: profile?.role === 'admin',
+    isTeacher: profile?.role === 'teacher',
+    isStudent: profile?.role === 'student',
     login,
+    signUp,
     logout,
     updateUserProfile,
-    isAuthenticated: !!currentUser,
-    isAdmin: currentUser?.role === 'admin',
-    isTeacher: currentUser?.role === 'teacher',
-    isStudent: currentUser?.role === 'student',
+    loading
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
