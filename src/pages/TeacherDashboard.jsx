@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Menu, X, PlusCircle, FileText, Users, ClipboardList } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import TeacherClassList from '../components/TeacherClassList';
 import TeacherSchedule from '../components/TeacherSchedule';
 import TeacherStudentPerformance from '../components/TeacherStudentPerformance';
@@ -29,7 +29,7 @@ const TeacherDashboard = () => {
     return <Navigate to="/" />;
   }
   
-  // Mock teacher data (will be replaced by currentUser data)
+  // Teacher data from current user
   const teacher = {
     name: currentUser.name || "John Smith",
     avatar: "https://randomuser.me/api/portraits/men/43.jpg",

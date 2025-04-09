@@ -22,6 +22,7 @@ import TeacherDetail from "./pages/TeacherDetail";
 import EventDetail from "./pages/EventDetail";
 import AdminForms from "./pages/AdminForms";
 import StudentProfile from "./pages/StudentProfile";
+import TeacherProfile from "./pages/TeacherProfile";
 import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/student" element={<StudentPortal />} />
               <Route path="/student/:id" element={<StudentDetail />} />
               <Route path="/profile/student" element={<StudentProfile />} />
+              <Route path="/profile/teacher" element={<TeacherProfile />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/login" element={<Login />} />
               <Route path="*" element={<NotFound />} />

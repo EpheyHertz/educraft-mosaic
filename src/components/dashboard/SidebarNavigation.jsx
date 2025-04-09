@@ -17,6 +17,7 @@ const SidebarNavigation = ({ activeTab, setActiveTab, teacher }) => {
     { id: 'lesson-planner', label: 'Lesson Planner', icon: <Book size={18} /> },
     { id: 'announcements', label: 'Announcements', icon: <MessageSquare size={18} /> },
     { id: 'resources', label: 'Resources', icon: <Library size={18} /> },
+    { id: 'assignments', label: 'Assignments', icon: <FileText size={18} /> }
   ];
   
   return (

@@ -9,16 +9,22 @@ const Layout = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   
+  // Check if current page is dashboard or profile page
+  const isDashboardPage = location.pathname.includes('/teacher') || 
+                          location.pathname.includes('/student') || 
+                          location.pathname.includes('/admin') ||
+                          location.pathname.includes('/profile');
+  
   // Check if current page is login page
   const isLoginPage = location.pathname === '/login';
   
   return (
     <>
-      <Navbar />
-      <div className="min-h-screen pt-16">
+      {!isDashboardPage && <Navbar />}
+      <div className={`min-h-screen ${!isDashboardPage ? 'pt-16' : ''}`}>
         <Outlet />
       </div>
-      <Footer />
+      {!isDashboardPage && <Footer />}
     </>
   );
 };
