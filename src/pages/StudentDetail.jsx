@@ -1,7 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Book, GraduationCap, Calendar, Award, BarChart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const StudentDetail = () => {
   const { id } = useParams();
@@ -9,42 +10,84 @@ const StudentDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching student data
-    const fetchStudent = () => {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        setStudent({
+    const fetchStudent = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch student profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*, student_details(*)')
+          .eq('id', id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        // Fetch enrollments and courses
+        const { data: enrollmentsData, error: enrollmentsError } = await supabase
+          .from('enrollments')
+          .select(`
+            id,
+            course_id,
+            courses(
+              id,
+              name,
+              profiles(first_name, last_name)
+            ),
+            grades(grade_value)
+          `)
+          .eq('student_id', id);
+          
+        if (enrollmentsError) throw enrollmentsError;
+        
+        // Transform enrollments to courses array
+        const courses = enrollmentsData.map(enrollment => ({
+          id: enrollment.course_id,
+          name: enrollment.courses?.name || 'Unknown Course',
+          grade: enrollment.grades?.[0]?.grade_value || 'N/A',
+          teacher: enrollment.courses?.profiles ? 
+            `${enrollment.courses.profiles.first_name} ${enrollment.courses.profiles.last_name}` : 
+            'Unknown Teacher'
+        }));
+        
+        // Combine data
+        const studentData = {
           id,
-          name: 'Jane Smith',
-          image: 'https://randomuser.me/api/portraits/women/67.jpg',
-          grade: '11th Grade',
-          enrollmentYear: '2022',
-          major: 'Science',
-          gpa: '3.8',
-          email: 'jane.smith@school.edu',
-          phone: '(555) 123-4567',
-          dateOfBirth: '2006-05-15',
-          address: '123 Student Avenue, Academic City, CA 90210',
-          parentName: 'Robert & Mary Smith',
-          parentContact: '(555) 987-6543',
-          courses: [
-            { id: 1, name: 'Advanced Mathematics', grade: 'A', teacher: 'Dr. Alan Johnson' },
-            { id: 2, name: 'Physics', grade: 'A-', teacher: 'Prof. Maria Garcia' },
-            { id: 3, name: 'Literature', grade: 'B+', teacher: 'Ms. Elizabeth Taylor' },
-            { id: 4, name: 'Computer Science', grade: 'A+', teacher: 'Mr. James Wilson' }
-          ],
-          attendance: 95,
+          name: `${profileData.first_name} ${profileData.last_name}`,
+          image: profileData.avatar_url || 'https://randomuser.me/api/portraits/women/67.jpg',
+          grade: profileData.student_details?.current_grade || 'Unknown Grade',
+          enrollmentYear: profileData.student_details?.admission_date ? 
+            new Date(profileData.student_details.admission_date).getFullYear().toString() : 
+            'Unknown',
+          major: 'Science', // Mock data for now
+          gpa: '3.8', // Mock data for now
+          email: profileData.email,
+          phone: profileData.phone || 'Not provided',
+          dateOfBirth: profileData.birth_date || 'Not provided',
+          address: profileData.address || 'Not provided',
+          parentName: profileData.student_details?.guardian_name || 'Not provided',
+          parentContact: profileData.student_details?.guardian_phone || 'Not provided',
+          courses,
+          attendance: 95, // Mock data for now
           achievements: [
             'Science Fair Winner 2023',
             'Outstanding Academic Performance',
             'Student Council Representative'
-          ]
-        });
+          ] // Mock data for now
+        };
+        
+        setStudent(studentData);
+      } catch (error) {
+        console.error('Error fetching student data:', error);
+        toast.error('Failed to load student data');
+      } finally {
         setLoading(false);
-      }, 800);
+      }
     };
 
-    fetchStudent();
+    if (id) {
+      fetchStudent();
+    }
   }, [id]);
 
   if (loading) {
@@ -173,8 +216,8 @@ const StudentDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {student.courses.map(course => (
-                    <tr key={course.id} className="border-b">
+                  {student.courses.map((course, index) => (
+                    <tr key={index} className="border-b">
                       <td className="py-3">
                         <a 
                           href={`/course/${course.id}`} 

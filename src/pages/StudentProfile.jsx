@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,28 +11,31 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { User, BookOpen, Award, FileText, Calendar, Phone, Mail, Home, Edit, Save } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentProfile = () => {
-  const { currentUser, isAuthenticated, isStudent } = useAuth();
+  const { currentUser, isAuthenticated, isStudent, user } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
   
-  // Mock profile data 
+  // Profile data state
   const [profileData, setProfileData] = useState({
-    name: 'Jane Doe',
-    email: 'student@school.edu',
-    phone: '(555) 123-4567',
-    address: '123 Campus Drive, University City, CA 94102',
-    bio: 'Passionate student majoring in Computer Science with interests in artificial intelligence and web development.',
-    studentId: 'S12345',
-    grade: '11',
-    enrollmentDate: '2022-09-01',
-    emergencyContact: 'John Doe (Father) - (555) 987-6543',
-    gpa: '3.8'
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    bio: '',
+    studentId: '',
+    grade: '',
+    enrollmentDate: '',
+    emergencyContact: '',
+    gpa: ''
   });
 
   // Form state for editing
-  const [formData, setFormData] = useState({...profileData});
+  const [formData, setFormData] = useState({});
 
   // Mock achievements
   const achievements = [
@@ -42,13 +44,81 @@ const StudentProfile = () => {
     { id: 3, title: 'Perfect Attendance', date: '2022-12-20', description: 'Achieved perfect attendance for the entire semester' }
   ];
 
-  // Mock enrolled courses
-  const enrolledCourses = [
-    { id: 1, code: 'CS101', name: 'Introduction to Computer Science', instructor: 'Dr. Smith', grade: 'A' },
-    { id: 2, code: 'MATH202', name: 'Advanced Calculus', instructor: 'Prof. Johnson', grade: 'B+' },
-    { id: 3, code: 'ENG105', name: 'Creative Writing', instructor: 'Ms. Davis', grade: 'A-' },
-    { id: 4, code: 'PHYS201', name: 'Physics II', instructor: 'Dr. Wilson', grade: 'B' }
-  ];
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch profile and student details
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*, student_details(*)')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        // Fetch enrollments and courses
+        const { data: enrollmentsData, error: enrollmentsError } = await supabase
+          .from('enrollments')
+          .select(`
+            id,
+            course_id,
+            courses(
+              id,
+              name,
+              code,
+              profiles(first_name, last_name)
+            ),
+            grades(grade_value)
+          `)
+          .eq('student_id', user.id);
+          
+        if (enrollmentsError) throw enrollmentsError;
+        
+        // Transform enrollments to courses array
+        const courses = enrollmentsData.map(enrollment => ({
+          id: enrollment.courses?.id || '',
+          code: enrollment.courses?.code || '',
+          name: enrollment.courses?.name || 'Unknown Course',
+          instructor: enrollment.courses?.profiles ? 
+            `${enrollment.courses.profiles.first_name} ${enrollment.courses.profiles.last_name}` : 
+            'Unknown Teacher',
+          grade: enrollment.grades?.[0]?.grade_value || 'N/A'
+        }));
+        
+        setEnrolledCourses(courses);
+        
+        // Prepare profile data
+        const studentData = {
+          name: `${profileData.first_name} ${profileData.last_name}`,
+          email: profileData.email || user.email,
+          phone: profileData.phone || 'Not provided',
+          address: profileData.address || 'Not provided',
+          bio: 'Passionate student with interests in science and technology.',
+          studentId: profileData.id.substring(0, 8).toUpperCase(),
+          grade: profileData.student_details?.current_grade || 'Not assigned',
+          enrollmentDate: profileData.student_details?.admission_date || new Date().toISOString().split('T')[0],
+          emergencyContact: profileData.student_details?.guardian_name ? 
+            `${profileData.student_details.guardian_name} - ${profileData.student_details.guardian_phone || 'No phone'}` : 
+            'Not provided',
+          gpa: '3.8' // Mock data for now
+        };
+        
+        setProfileData(studentData);
+        setFormData({...studentData});
+      } catch (error) {
+        console.error('Error fetching student data:', error);
+        toast.error('Failed to load profile data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStudentData();
+  }, [user?.id]);
 
   // Redirect if not authenticated or not a student
   if (!isAuthenticated) {
@@ -67,11 +137,68 @@ const StudentProfile = () => {
     }));
   };
 
-  const handleSaveProfile = () => {
-    setProfileData({...formData});
-    setIsEditing(false);
-    toast.success('Profile updated successfully!');
+  const handleSaveProfile = async () => {
+    try {
+      // Extract the data to update
+      const nameParts = formData.name.split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ');
+      
+      // Update profile table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: firstName,
+          last_name: lastName,
+          phone: formData.phone,
+          address: formData.address,
+        })
+        .eq('id', user.id);
+        
+      if (profileError) throw profileError;
+      
+      // Get guardian info from emergency contact
+      let guardianName = '';
+      let guardianPhone = '';
+      
+      if (formData.emergencyContact) {
+        const parts = formData.emergencyContact.split('-');
+        if (parts.length > 0) {
+          guardianName = parts[0].trim();
+          if (parts.length > 1) {
+            guardianPhone = parts[1].trim();
+          }
+        }
+      }
+      
+      // Update student_details table
+      const { error: detailsError } = await supabase
+        .from('student_details')
+        .update({
+          current_grade: formData.grade,
+          guardian_name: guardianName,
+          guardian_phone: guardianPhone,
+        })
+        .eq('student_id', user.id);
+        
+      if (detailsError) throw detailsError;
+      
+      setProfileData({...formData});
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -170,6 +297,7 @@ const StudentProfile = () => {
                             type="email" 
                             value={formData.email} 
                             onChange={handleInputChange} 
+                            disabled
                           />
                         </div>
                         <div>
@@ -291,29 +419,35 @@ const StudentProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {enrolledCourses.map((course) => (
-                      <div 
-                        key={course.id} 
-                        className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium text-lg flex items-center">
-                              <BookOpen className="h-5 w-5 mr-2 text-primary" />
-                              {course.code}: {course.name}
-                            </h3>
-                            <p className="text-gray-500">Instructor: {course.instructor}</p>
+                    {enrolledCourses.length > 0 ? (
+                      enrolledCourses.map((course) => (
+                        <div 
+                          key={course.id} 
+                          className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-medium text-lg flex items-center">
+                                <BookOpen className="h-5 w-5 mr-2 text-primary" />
+                                {course.code}: {course.name}
+                              </h3>
+                              <p className="text-gray-500">Instructor: {course.instructor}</p>
+                            </div>
+                            <Badge variant={
+                              course.grade.startsWith('A') ? "success" : 
+                              course.grade.startsWith('B') ? "secondary" : 
+                              "outline"
+                            }>
+                              Grade: {course.grade}
+                            </Badge>
                           </div>
-                          <Badge variant={
-                            course.grade.startsWith('A') ? "success" : 
-                            course.grade.startsWith('B') ? "secondary" : 
-                            "outline"
-                          }>
-                            Grade: {course.grade}
-                          </Badge>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 text-gray-500">
+                        You are not enrolled in any courses yet.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>

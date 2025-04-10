@@ -1,16 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, BookOpen, Calendar, Settings, Bell, Search, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState([
+    { label: 'Total Students', value: '0', icon: Users },
+    { label: 'Total Teachers', value: '0', icon: BookOpen },
+    { label: 'Active Courses', value: '0', icon: Calendar },
+  ]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const stats = [
-    { label: 'Total Students', value: '1,234', icon: Users },
-    { label: 'Total Teachers', value: '78', icon: BookOpen },
-    { label: 'Active Courses', value: '45', icon: Calendar },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch student count
+        const { count: studentCount, error: studentError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'student');
+          
+        if (studentError) throw studentError;
+        
+        // Fetch teacher count
+        const { count: teacherCount, error: teacherError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'teacher');
+          
+        if (teacherError) throw teacherError;
+        
+        // Fetch course count
+        const { count: courseCount, error: courseError } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'active');
+          
+        if (courseError) throw courseError;
+        
+        // Fetch recent activities
+        const { data: recentActivities, error: activitiesError } = await supabase
+          .from('enrollments')
+          .select('created_at, student_id, profiles:student_id(first_name, last_name)')
+          .order('created_at', { ascending: false })
+          .limit(3);
+          
+        if (activitiesError) throw activitiesError;
+        
+        // Update stats
+        setStats([
+          { label: 'Total Students', value: studentCount.toString(), icon: Users },
+          { label: 'Total Teachers', value: teacherCount.toString(), icon: BookOpen },
+          { label: 'Active Courses', value: courseCount.toString(), icon: Calendar },
+        ]);
+        
+        // Transform activities data
+        const activities = recentActivities.map(activity => ({
+          id: activity.student_id,
+          title: 'New student enrollment',
+          name: activity.profiles ? `${activity.profiles.first_name} ${activity.profiles.last_name}` : 'Unknown student',
+          time: new Date(activity.created_at).toLocaleString()
+        }));
+        
+        setActivities(activities);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -56,17 +124,29 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
-            <div className="space-y-4">
-              {[1, 2, 3].map((_, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-2 h-2 mt-2 rounded-full bg-primary"></div>
-                  <div>
-                    <p className="font-medium">New student registration</p>
-                    <p className="text-sm text-gray-500">2 hours ago</p>
+            {loading ? (
+              <div className="flex justify-center items-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {activities.length > 0 ? (
+                  activities.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-primary"></div>
+                      <div>
+                        <p className="font-medium">{activity.title}: {activity.name}</p>
+                        <p className="text-sm text-gray-500">{activity.time}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    No recent activities found
                   </div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">

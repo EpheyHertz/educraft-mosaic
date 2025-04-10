@@ -1,7 +1,8 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Mail, Phone, BookOpen, Users, Award, FileText, GraduationCap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const TeacherDetail = () => {
   const { id } = useParams();
@@ -9,18 +10,49 @@ const TeacherDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching teacher data
-    const fetchTeacher = () => {
-      // In a real app, this would be an API call
-      setTimeout(() => {
-        setTeacher({
+    const fetchTeacher = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch teacher profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*, teacher_details(*), departments(*)')
+          .eq('id', id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        // Fetch courses taught by this teacher
+        const { data: coursesData, error: coursesError } = await supabase
+          .from('courses')
+          .select(`
+            id,
+            name,
+            code,
+            enrollments(id)
+          `)
+          .eq('teacher_id', id);
+          
+        if (coursesError) throw coursesError;
+        
+        // Transform courses
+        const courses = coursesData.map(course => ({
+          id: course.id,
+          title: course.name,
+          code: course.code,
+          students: course.enrollments ? course.enrollments.length : 0
+        }));
+        
+        // Combine data
+        const teacherData = {
           id,
-          name: 'Dr. John Smith',
-          image: 'https://randomuser.me/api/portraits/men/42.jpg',
-          position: 'Senior Professor',
-          department: 'Science & Mathematics',
-          email: 'john.smith@school.edu',
-          phone: '(555) 123-4567',
+          name: `${profileData.first_name || 'Dr.'} ${profileData.last_name || 'Smith'}`,
+          image: profileData.avatar_url || 'https://randomuser.me/api/portraits/men/42.jpg',
+          position: profileData.teacher_details?.qualification || 'Senior Professor',
+          department: profileData.departments?.name || 'Science & Mathematics',
+          email: profileData.email,
+          phone: profileData.phone || '(555) 123-4567',
           office: 'Science Building, Room 305',
           officeHours: 'Monday & Wednesday, 2:00 PM - 4:00 PM',
           education: [
@@ -28,13 +60,8 @@ const TeacherDetail = () => {
             { degree: 'M.S. in Applied Mathematics', institution: 'MIT', year: '2006' },
             { degree: 'B.S. in Mathematics', institution: 'UC Berkeley', year: '2004' }
           ],
-          bio: 'Dr. Smith has over 15 years of teaching experience in mathematics and statistics. His research focuses on applied mathematics and data science, with particular interest in mathematical modeling and analysis of complex systems. He has published numerous papers in prestigious journals and is a recipient of multiple teaching awards.',
-          courses: [
-            { id: 1, title: 'Advanced Calculus', code: 'MATH 301', students: 28 },
-            { id: 2, title: 'Linear Algebra', code: 'MATH 240', students: 35 },
-            { id: 3, title: 'Differential Equations', code: 'MATH 320', students: 22 },
-            { id: 4, title: 'Statistical Methods', code: 'STAT 210', students: 40 }
-          ],
+          bio: profileData.address || 'Experienced educator with a passion for teaching.',
+          courses,
           publications: [
             'Smith, J., et al. (2022). "Novel Approaches to Mathematical Modeling." Journal of Applied Mathematics, 45(3), 112-128.',
             'Smith, J., & Johnson, A. (2020). "Statistical Analysis Methods for Educational Research." Educational Mathematics Review, 18(2), 78-95.',
@@ -45,12 +72,20 @@ const TeacherDetail = () => {
             'Faculty Research Achievement Award (2019)',
             'Outstanding Mentor Award (2017)'
           ]
-        });
+        };
+        
+        setTeacher(teacherData);
+      } catch (error) {
+        console.error('Error fetching teacher data:', error);
+        toast.error('Failed to load teacher data');
+      } finally {
         setLoading(false);
-      }, 800);
+      }
     };
 
-    fetchTeacher();
+    if (id) {
+      fetchTeacher();
+    }
   }, [id]);
 
   if (loading) {
