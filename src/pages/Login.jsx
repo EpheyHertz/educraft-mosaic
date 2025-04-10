@@ -1,14 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../components/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login, isAdmin, isTeacher, isStudent } = useAuth();
+  const { login, isAdmin, isTeacher, isStudent, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (isAdmin) {
+        navigate('/admin');
+      } else if (isTeacher) {
+        navigate('/teacher');
+      } else if (isStudent) {
+        navigate('/student');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [isAuthenticated, isAdmin, isTeacher, isStudent, navigate]);
 
   const onSubmit = async (data) => {
     try {
@@ -16,18 +31,7 @@ const Login = () => {
       const success = await login(data.email, data.password);
       
       if (success) {
-        // Navigate based on role - we'll redirect in useEffect after auth state changes
-        setTimeout(() => {
-          if (isAdmin) {
-            navigate('/admin');
-          } else if (isTeacher) {
-            navigate('/teacher');
-          } else if (isStudent) {
-            navigate('/student');
-          } else {
-            navigate('/');
-          }
-        }, 500); // Small timeout to let auth state propagate
+        // The redirect will happen automatically in the useEffect
       }
     } catch (error) {
       console.error('Login failed:', error);
@@ -117,9 +121,9 @@ const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <a href="/auth" className="font-medium text-primary hover:text-primary/80">
+              <Link to="/auth" className="font-medium text-primary hover:text-primary/80">
                 Create an Account
-              </a>
+              </Link>
             </p>
           </div>
         </div>

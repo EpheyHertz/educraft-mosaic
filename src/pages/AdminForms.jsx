@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,11 +10,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminForms = () => {
   // State for date pickers
   const [eventDate, setEventDate] = useState(null);
   const [selectedTab, setSelectedTab] = useState("teacher");
+  const [loading, setLoading] = useState(false);
 
   // Forms
   const teacherForm = useForm();
@@ -24,33 +25,173 @@ const AdminForms = () => {
   const eventForm = useForm();
 
   // Handle form submissions
-  const handleTeacherSubmit = (data) => {
-    console.log("Teacher data:", data);
-    toast.success("Teacher added successfully!");
-    teacherForm.reset();
+  const handleTeacherSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // First create a user account for the teacher
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: Math.random().toString(36).slice(-10), // Generate random password
+        options: {
+          data: {
+            first_name: data.name.split(' ')[0],
+            last_name: data.name.split(' ').slice(1).join(' '),
+            role: 'teacher'
+          }
+        }
+      });
+      
+      if (authError) throw authError;
+      
+      // Then update teacher details
+      if (authData?.user) {
+        const { error: detailsError } = await supabase
+          .from('teacher_details')
+          .update({
+            qualification: data.qualifications,
+            specialization: data.subject,
+            joining_date: new Date().toISOString().split('T')[0],
+            emergency_contact: data.phone
+          })
+          .eq('teacher_id', authData.user.id);
+        
+        if (detailsError) throw detailsError;
+        
+        toast.success("Teacher added successfully!");
+        teacherForm.reset();
+      }
+    } catch (error) {
+      console.error('Error adding teacher:', error);
+      toast.error(error.message || "Failed to add teacher");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStudentSubmit = (data) => {
-    console.log("Student data:", data);
-    toast.success("Student added successfully!");
-    studentForm.reset();
+  const handleStudentSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // First create a user account for the student
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: Math.random().toString(36).slice(-10), // Generate random password
+        options: {
+          data: {
+            first_name: data.name.split(' ')[0],
+            last_name: data.name.split(' ').slice(1).join(' '),
+            role: 'student'
+          }
+        }
+      });
+      
+      if (authError) throw authError;
+      
+      // Then update student details
+      if (authData?.user) {
+        const { error: detailsError } = await supabase
+          .from('student_details')
+          .update({
+            guardian_name: data.guardianName,
+            guardian_phone: data.guardianPhone,
+            current_grade: data.grade,
+            admission_date: new Date().toISOString().split('T')[0],
+            registration_number: data.studentId
+          })
+          .eq('student_id', authData.user.id);
+        
+        if (detailsError) throw detailsError;
+        
+        toast.success("Student added successfully!");
+        studentForm.reset();
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+      toast.error(error.message || "Failed to add student");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCourseSubmit = (data) => {
-    console.log("Course data:", data);
-    toast.success("Course added successfully!");
-    courseForm.reset();
+  const handleCourseSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // Insert course into courses table
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .insert({
+          name: data.title,
+          code: data.code,
+          description: data.description,
+          credits: parseInt(data.credits),
+          status: 'active'
+        })
+        .select();
+      
+      if (courseError) throw courseError;
+      
+      toast.success("Course added successfully!");
+      courseForm.reset();
+    } catch (error) {
+      console.error('Error adding course:', error);
+      toast.error(error.message || "Failed to add course");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEventSubmit = (data) => {
-    const finalData = {
-      ...data,
-      date: eventDate ? format(eventDate, 'yyyy-MM-dd') : ''
-    };
-    console.log("Event data:", finalData);
-    toast.success("Event added successfully!");
-    eventForm.reset();
-    setEventDate(null);
+  const handleEventSubmit = async (data) => {
+    try {
+      setLoading(true);
+      
+      // Prepare event data
+      const eventStartDate = eventDate ? new Date(eventDate) : new Date();
+      
+      // Parse time (simple parsing for HH:MM format)
+      let hours = 0;
+      let minutes = 0;
+      if (data.time) {
+        const timeParts = data.time.split(':');
+        if (timeParts.length >= 2) {
+          hours = parseInt(timeParts[0]);
+          minutes = parseInt(timeParts[1]);
+        }
+      }
+      
+      // Set the time on the date object
+      eventStartDate.setHours(hours, minutes, 0, 0);
+      
+      // Create end date (default to 1 hour later)
+      const eventEndDate = new Date(eventStartDate);
+      eventEndDate.setHours(eventStartDate.getHours() + 1);
+      
+      // Insert event into events table
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .insert({
+          title: data.title,
+          description: data.description,
+          location: data.location,
+          start_date: eventStartDate.toISOString(),
+          end_date: eventEndDate.toISOString(),
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          is_public: true
+        })
+        .select();
+      
+      if (eventError) throw eventError;
+      
+      toast.success("Event added successfully!");
+      eventForm.reset();
+      setEventDate(null);
+    } catch (error) {
+      console.error('Error adding event:', error);
+      toast.error(error.message || "Failed to add event");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -155,7 +296,9 @@ const AdminForms = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full">Add Teacher</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Adding Teacher...' : 'Add Teacher'}
+              </Button>
             </form>
           </div>
         </TabsContent>
@@ -239,7 +382,9 @@ const AdminForms = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full">Add Student</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Adding Student...' : 'Add Student'}
+              </Button>
             </form>
           </div>
         </TabsContent>
@@ -341,7 +486,9 @@ const AdminForms = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full">Add Course</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Adding Course...' : 'Add Course'}
+              </Button>
             </form>
           </div>
         </TabsContent>
@@ -445,7 +592,9 @@ const AdminForms = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full">Add Event</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Adding Event...' : 'Add Event'}
+              </Button>
             </form>
           </div>
         </TabsContent>

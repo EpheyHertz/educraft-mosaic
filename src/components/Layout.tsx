@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
@@ -8,7 +9,7 @@ const Layout = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   
-  // Always show navbar, but we'll keep the conditional rendering for the footer
+  // Only hide footer on dashboard pages
   const isDashboardPage = location.pathname.includes('/teacher') || 
                           location.pathname.includes('/student') || 
                           location.pathname.includes('/admin') ||
