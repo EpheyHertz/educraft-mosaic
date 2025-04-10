@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import { useAuth } from './AuthContext';
 
-const Layout = () => {
+const Layout: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   
