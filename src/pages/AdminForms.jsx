@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -11,12 +12,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthContext';
 
 const AdminForms = () => {
   // State for date pickers
   const [eventDate, setEventDate] = useState(null);
   const [selectedTab, setSelectedTab] = useState("teacher");
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   // Forms
   const teacherForm = useForm();
@@ -29,10 +32,13 @@ const AdminForms = () => {
     try {
       setLoading(true);
       
+      // Generate a random password for the teacher
+      const randomPassword = Math.random().toString(36).slice(-10);
+      
       // First create a user account for the teacher
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: Math.random().toString(36).slice(-10), // Generate random password
+        password: randomPassword,
         options: {
           data: {
             first_name: data.name.split(' ')[0],
@@ -48,13 +54,13 @@ const AdminForms = () => {
       if (authData?.user) {
         const { error: detailsError } = await supabase
           .from('teacher_details')
-          .update({
+          .insert({
+            teacher_id: authData.user.id,
             qualification: data.qualifications,
             specialization: data.subject,
             joining_date: new Date().toISOString().split('T')[0],
             emergency_contact: data.phone
-          })
-          .eq('teacher_id', authData.user.id);
+          });
         
         if (detailsError) throw detailsError;
         
@@ -73,10 +79,13 @@ const AdminForms = () => {
     try {
       setLoading(true);
       
+      // Generate a random password for the student
+      const randomPassword = Math.random().toString(36).slice(-10);
+      
       // First create a user account for the student
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: Math.random().toString(36).slice(-10), // Generate random password
+        password: randomPassword,
         options: {
           data: {
             first_name: data.name.split(' ')[0],
@@ -92,14 +101,14 @@ const AdminForms = () => {
       if (authData?.user) {
         const { error: detailsError } = await supabase
           .from('student_details')
-          .update({
+          .insert({
+            student_id: authData.user.id,
             guardian_name: data.guardianName,
             guardian_phone: data.guardianPhone,
             current_grade: data.grade,
             admission_date: new Date().toISOString().split('T')[0],
             registration_number: data.studentId
-          })
-          .eq('student_id', authData.user.id);
+          });
         
         if (detailsError) throw detailsError;
         
@@ -119,16 +128,16 @@ const AdminForms = () => {
       setLoading(true);
       
       // Insert course into courses table
-      const { data: courseData, error: courseError } = await supabase
+      const { error: courseError } = await supabase
         .from('courses')
         .insert({
           name: data.title,
           code: data.code,
           description: data.description,
           credits: parseInt(data.credits),
-          status: 'active'
-        })
-        .select();
+          status: 'active',
+          teacher_id: data.department === 'technology' ? user?.id : null // Optional: assign to current admin if relevant
+        });
       
       if (courseError) throw courseError;
       
@@ -168,7 +177,7 @@ const AdminForms = () => {
       eventEndDate.setHours(eventStartDate.getHours() + 1);
       
       // Insert event into events table
-      const { data: eventData, error: eventError } = await supabase
+      const { error: eventError } = await supabase
         .from('events')
         .insert({
           title: data.title,
@@ -176,10 +185,9 @@ const AdminForms = () => {
           location: data.location,
           start_date: eventStartDate.toISOString(),
           end_date: eventEndDate.toISOString(),
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: user?.id,
           is_public: true
-        })
-        .select();
+        });
       
       if (eventError) throw eventError;
       

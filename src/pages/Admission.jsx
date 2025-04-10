@@ -20,7 +20,7 @@ const Admission = () => {
       // First create a user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: data.password || Math.random().toString(36).slice(-8), // Generate random password if not provided
+        password: data.password,
         options: {
           data: {
             first_name: data.fullName.split(' ')[0],
@@ -32,19 +32,19 @@ const Admission = () => {
       
       if (authError) throw authError;
       
-      // Update student details
+      // Create student details
       if (authData?.user) {
         const { error: detailsError } = await supabase
           .from('student_details')
-          .update({
+          .insert({
+            student_id: authData.user.id,
             guardian_name: data.guardianName,
             guardian_email: data.guardianEmail,
             guardian_phone: data.phone,
             current_grade: data.gradeLevel,
             admission_date: new Date().toISOString().split('T')[0],
             previous_school: data.previousSchool
-          })
-          .eq('student_id', authData.user.id);
+          });
         
         if (detailsError) throw detailsError;
       }
