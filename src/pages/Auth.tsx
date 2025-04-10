@@ -25,7 +25,7 @@ import { UserRole } from '@/integrations/supabase/types.d';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Auth = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin, isTeacher, isStudent } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,9 +38,17 @@ const Auth = () => {
   useEffect(() => {
     // If user is already authenticated, redirect to appropriate dashboard
     if (isAuthenticated) {
-      navigate('/');
+      if (isAdmin) {
+        navigate('/admin');
+      } else if (isTeacher) {
+        navigate('/teacher');
+      } else if (isStudent) {
+        navigate('/student');
+      } else {
+        navigate('/');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isAdmin, isTeacher, isStudent, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

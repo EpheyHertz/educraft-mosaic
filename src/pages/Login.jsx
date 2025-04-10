@@ -1,22 +1,38 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const { login } = useAuth();
+  const { login, isAdmin, isTeacher, isStudent } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const onSubmit = async (data) => {
     try {
-      await login(data.email, data.password, data.role);
-      // Redirect based on role
-      navigate(data.role === 'teacher' ? '/teacher' : 
-               data.role === 'admin' ? '/admin' : '/student');
+      setLoading(true);
+      const success = await login(data.email, data.password);
+      
+      if (success) {
+        // Navigate based on role - we'll redirect in useEffect after auth state changes
+        setTimeout(() => {
+          if (isAdmin) {
+            navigate('/admin');
+          } else if (isTeacher) {
+            navigate('/teacher');
+          } else if (isStudent) {
+            navigate('/student');
+          } else {
+            navigate('/');
+          }
+        }, 500); // Small timeout to let auth state propagate
+      }
     } catch (error) {
       console.error('Login failed:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,31 +84,6 @@ const Login = () => {
               {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                I am a
-              </label>
-              <div className="mt-2 grid grid-cols-3 gap-3">
-                {['student', 'teacher', 'admin'].map((role) => (
-                  <label 
-                    key={role}
-                    className="flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium cursor-pointer hover:bg-gray-50"
-                  >
-                    <input
-                      type="radio"
-                      value={role}
-                      {...register('role', { required: 'Please select a role' })}
-                      className="sr-only"
-                    />
-                    <span className={`capitalize ${register('role').value === role ? 'text-primary' : ''}`}>
-                      {role}
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {errors.role && <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>}
-            </div>
-            
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -116,8 +107,9 @@ const Login = () => {
               <button
                 type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                disabled={loading}
               >
-                Sign In
+                {loading ? 'Signing in...' : 'Sign In'}
               </button>
             </div>
           </form>
@@ -125,8 +117,8 @@ const Login = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <a href="/admission" className="font-medium text-primary hover:text-primary/80">
-                Apply for Admission
+              <a href="/auth" className="font-medium text-primary hover:text-primary/80">
+                Create an Account
               </a>
             </p>
           </div>
